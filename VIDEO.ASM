@@ -11,18 +11,23 @@ draw_field proc
     mov ax, videoseg
     mov es, ax
 
-    xor si, si
     mov dx, 25h
-    mov cx, 320*200
-draw_loop:
-    call draw
-    inc si
-    dec cx
-    jnz draw_loop
+    call clear
 
     pop es
     ret
 draw_field endp
+
+clear proc
+    xor si, si
+    mov cx, 320*200
+clear_loop:
+    mov byte ptr es:[si], dl
+    inc si
+    dec cx
+    jnz clear_loop
+    ret
+clear endp
 
 draw proc
     mov byte ptr es:[si], dl
