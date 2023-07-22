@@ -7,27 +7,32 @@ init_screen proc
 init_screen endp
 
 draw_field proc
-   mov si, 0
+   push es
+   mov ax, videoseg
+   mov es, ax
+
+   xor si, si
+   xor di, di
    mov dh, fsize
 draw_loop:
    mov dl, fsize
 draw_inner_loop:
-   mov cl, byte ptr [bx]
+   mov cl, byte ptr field[di]
    mov ch, 0fh
    call draw
-   inc bx
+   inc di
    dec dl
    jnz draw_inner_loop
    add si, 64 * 2
    dec dh
    jnz draw_loop
+
+   pop es
    ret
 draw_field endp
 
 draw proc
-   push ds
-   push bx
-
+   push di
    mov bx, cx
    shl bl, 5
    ; if field is hidden, draw a #
@@ -56,13 +61,9 @@ draw_mine:
    mov bx, 4058h
 
 display_symbol:
-   mov ax, videoseg
-   mov ds, ax
-   mov word ptr [si], bx
+   mov word ptr es:[si], bx
    inc si
    inc si
-   
-   pop bx
-   pop ds
+   pop di
    ret
 draw endp
