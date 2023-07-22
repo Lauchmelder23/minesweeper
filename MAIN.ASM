@@ -45,8 +45,6 @@ mine_loop:  ; generated mine positions
    jnz mine_loop
 
    call calc_cells
-
-   mov bx, offset field
    call draw_field
    
 endless:
@@ -134,7 +132,7 @@ nend:
    ret
 num_surrounding_mines endp
 
-include TEXT.ASM
-; include VIDEO.ASM
+; include TEXT.ASM
+include VIDEO.ASM
    
    end start
