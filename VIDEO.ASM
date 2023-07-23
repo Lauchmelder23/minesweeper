@@ -8,6 +8,49 @@ init_screen proc
    ret
 init_screen endp
 
+draw_timer proc 
+    push es
+    push ax
+    push dx
+    push bx
+    push cx
+    push si
+
+    mov ax, videoseg
+    mov es, ax
+
+    mov ax, 320 * 8 * 3 + 8 * 24
+    mov dh, 8Fh
+    mov bx, timer
+
+    mov cl, 4
+time_loop:
+    mov dl, bl
+    and dl, 0Fh
+    cmp dl, 9
+    ja letter
+number:
+    add dl, 30h
+    jmp time_draw
+letter:
+    add dl, 37h
+time_draw:
+    mov si, ax
+    call draw_char
+    sub ax, 8
+    shr bx, 4
+    dec cl
+    jnz time_loop
+
+    pop si
+    pop cx
+    pop bx
+    pop dx
+    pop ax
+    pop es
+    ret
+draw_timer endp 
+
 draw_field proc
     push es
     mov ax, videoseg
@@ -152,6 +195,7 @@ draw_char proc
     push dx
     push ax
     push bx
+    push cx
     mov ax, romseg
     mov ds, ax
     
@@ -165,8 +209,13 @@ char_loop:
     inc bx
 inner_char_loop:
     rcl al, 1
-    jnc char_loop_end
+    jnc char_loop_bg
     mov byte ptr es:[si+321], dh
+    jmp char_loop_end
+char_loop_bg:
+    test dh, 80h
+    jz char_loop_end
+    mov byte ptr es:[si+321], 00h
 char_loop_end:
     inc si
     inc cl
@@ -177,6 +226,7 @@ char_loop_end:
     cmp ch, 8
     jne char_loop
 
+    pop cx
     pop bx
     pop ax
     pop dx

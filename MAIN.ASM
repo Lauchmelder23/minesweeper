@@ -21,6 +21,8 @@ mines = 25
    game_over db 0
    game_over_text db 47h, 61h, 6Dh, 65h, 20h, 4Fh, 76h, 65h, 72h
    win_text db 59h, 6Fh, 75h, 20h, 57h, 69h, 6Eh
+   old_vector dw 2 dup(?)
+   timer dw 1620
    seed dw 0
 
 .code
@@ -128,6 +130,22 @@ reveal_end:
    ret
 reveal endp
 
+timer_int:
+   push ax
+   mov ax, @DATA
+   mov ds, ax
+   cmp game_over, 0
+   ja timer_end
+   dec timer
+   call draw_timer
+   cmp timer, 0
+   jne timer_end
+   mov game_over, 1
+   call draw_field
+timer_end:
+   pop ax
+   iret
+
 start:
    call init_screen
    ; setup playing field
@@ -161,6 +179,24 @@ mine_loop:  ; generated mine positions
    ; enable cursor
    mov ax, 1
    int 33h
+   
+   ; register timer interrupt
+   mov al, 1Ch
+   mov ah, 35h
+   int 21h
+   push es
+   pop ax
+   mov old_vector, ax 
+   mov old_vector+2, bx
+
+   push ds
+   push cs
+   pop ds
+   mov dx, offset timer_int
+   mov al, 1Ch
+   mov ah, 25h
+   int 21h
+   pop ds
 
    call calc_cells
    call draw_field
@@ -175,13 +211,21 @@ endless:
    jmp endless
 
 final:
+   mov ax, @DATA
+   mov ds, ax
    xor ax, ax
    int 33h
    mov ax, 3
    int 10h
    mov ah, 4Ch
    int 21h
-
+   mov ax, [old_vector]
+   mov ds, ax
+   mov dx, [old_vector+2]
+   mov al, 1Ch
+   mov ah, 25h
+   int 21h
+   
 ; Taken from https://stackoverflow.com/a/40709661/13551386
 rng proc
    mov ax, 25173
