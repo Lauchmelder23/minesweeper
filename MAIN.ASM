@@ -22,6 +22,12 @@ mines = 10h
 .code
    ORG 100h
 
+mouse proc far
+   push ax
+   pop ax
+   ret
+mouse endp
+
 start:
    call init_screen
    ; setup playing field
@@ -44,6 +50,18 @@ mine_loop:  ; generated mine positions
    dec bl
    jnz mine_loop
 
+   ; set mouse procedure
+   push cs
+   pop es   
+   mov cx, 00010100b    ; react on left/right button released
+   mov dx, offset mouse
+   mov ax, 0Ch
+   int 33h
+
+   ; enable cursor
+   mov ax, 1
+   int 33h
+
    call calc_cells
    call draw_field
    
@@ -57,6 +75,8 @@ endless:
    jmp endless
 
 final:
+   xor ax, ax
+   int 33h
    mov ax, 3
    int 10h
    mov ah, 4Ch

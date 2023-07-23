@@ -13,6 +13,10 @@ draw_field proc
     mov ax, videoseg
     mov es, ax
 
+    ; disable cursor
+    mov ax, 2
+    int 33h
+
     mov dx, 00h
     call clear
 
@@ -104,6 +108,9 @@ draw_call:
     mov si, ax
     call draw_char
 draw_cell_end:
+    ; enable cursor
+    mov ax, 1
+    int 33h
     pop ax
     ret
 draw_cell endp
