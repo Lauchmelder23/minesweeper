@@ -17,8 +17,8 @@ draw_field proc
     mov ax, 2
     int 33h
 
-    mov dx, 00h
-    call clear
+    ; mov dx, 00h
+    ; call clear
 
     mov di, 0FFh
     mov ah, 10h
@@ -36,12 +36,24 @@ draw_inner_loop:
     jnz draw_loop
 
     ; game over?
-    cmp game_over, 1
-    jne draw_end 
+    cmp game_over, 0
+    je draw_end 
     mov ax, 320 * 17 * 8 + 16
-    mov dh, 04h
     xor bx, bx
+    cmp game_over, 1
+    je game_over_draw
+win_draw:
+    mov dh, 0Ah
+    mov dl, byte ptr win_text[bx]
+    mov si, ax
+    call draw_char
+    add ax, 8 
+    inc bx
+    cmp bx, 7
+    jne win_draw
+    jmp draw_end
 game_over_draw:
+    mov dh, 04h
     mov dl, byte ptr game_over_text[bx]
     mov si, ax
     call draw_char

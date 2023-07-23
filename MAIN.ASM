@@ -4,7 +4,7 @@
 esc_code = 1Bh
 
 fsize = 10h
-mines = 10h
+mines = 25
 
 .stack 100h
 .data
@@ -17,8 +17,10 @@ mines = 10h
    field db 10h*10h dup (0h)
    colors db 00h, 09h, 0Ah, 0Ch, 01h, 04h, 03h, 05h, 08h
    offsets db -11h, -10h, -0Fh, -01h, 01h, 0Fh, 10h, 11h
+   fields_left dw 100h
    game_over db 0
    game_over_text db 47h, 61h, 6Dh, 65h, 20h, 4Fh, 76h, 65h, 72h
+   win_text db 59h, 6Fh, 75h, 20h, 57h, 69h, 6Eh
    seed dw 0
 
 .code
@@ -34,7 +36,7 @@ mouse proc far
    
    ; if game over, do nothing
    cmp game_over, 1
-   je mouse_end
+   jge mouse_end
 
    ; convert coordinates to index for array
    cmp cx, 16   ; less than 16, out of bounds
@@ -59,13 +61,10 @@ mouse proc far
    ; only reveal if there is no flag
    test field[di], 40h
    jnz mouse_end 
-   xor field[di], 80h
-   test field[di], 20h
-   jz check_reveal
-   mov game_over, 1
-   jmp repaint
-check_reveal:
-
+   call reveal
+   cmp fields_left, mines
+   ja repaint
+   mov game_over, 2
    jmp repaint
 test_flag:
    test ax, 10h
@@ -82,7 +81,51 @@ mouse_end:
 mouse endp
 
 reveal proc
+   push di
+   push si
+   push dx
+   push ax
+   push bx
 
+   ; dont reveal if flagged or already revealed
+   test field[di], 0C0h
+   jnz reveal_end
+   or field[di], 80h
+   dec fields_left
+   ; if number > 0, dont recurse 
+   test field[di], 0Fh
+   jnz reveal_end
+   ; if mine, game over, dont recurse
+   test field[di], 20h
+   jz reveal_start
+   mov game_over, 1
+   jmp reveal_end
+
+reveal_start:
+   mov dx, di
+
+   ; loop over neighbours
+   call get_neighbour_mask
+   mov si, 0
+reveal_loop:
+   rcl ah, 1
+   jnc reveal_loop_end
+   mov bx, dx
+   add bl, byte ptr offsets[si]
+   mov di, bx
+   call reveal
+reveal_loop_end:
+   inc si
+   cmp si, 8
+   jne reveal_loop
+
+reveal_end:
+   pop bx
+   pop ax
+   pop dx
+   pop si
+   pop di
+   ret
 reveal endp
 
 start:
@@ -168,16 +211,16 @@ calc_cell_ret:
    ret
 calc_cells endp
 
-num_surrounding_mines proc
+get_neighbour_mask proc
    mov ah, 0FFh;  ; bitmask for storing which surrounding fields need to be checked
                   ; bits 7-5 = row above, bits 4+3 = before/after, bits 2-0: below 
 above:
    cmp di, 10h
-   jge below
+   jae below
    and ah, 1Fh    ; mask with 00011111 to eliminate row above
 below:
    cmp di, 0EFh
-   jle before
+   jbe before
    and ah, 0F8h   ; 11111000
 before:
    mov bx, di
@@ -186,26 +229,32 @@ before:
    and ah, 6Bh    ; 01101011
 after:
    cmp bl, 0F0h
-   jnz num_calc
+   jnz neighbour_end
    and ah, 0D6h    ; 11010110
 
-num_calc:
+neighbour_end: 
+   ret
+get_neighbour_mask endp
+
+num_surrounding_mines proc
+   call get_neighbour_mask
+
    xor al, al
    ; go through each neighbour, if the bits are set
-   mov si, 0
-n0:
-   cmp si, 8
-   jz nend
-   inc si
+   xor si, si
+num_loop:
    rcl ah, 1
-   jnc n0
+   jnc nend
    mov bx, di
-   add bl, byte ptr offsets[si-1] 
+   add bl, byte ptr offsets[si] 
    test byte ptr field[bx], 20h
-   jz n0
+   jz nend
    inc al
-   jmp n0
 nend:
+   inc si
+   cmp si, 9
+   jne num_loop
+
    ret
 num_surrounding_mines endp
 
