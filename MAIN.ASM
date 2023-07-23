@@ -23,10 +23,50 @@ mines = 10h
    ORG 100h
 
 mouse proc far
-   push ax
-   pop ax
+   push ds
+   push es
+   push di
+
+   mov bx, @DATA 
+   mov ds, bx
+
+   ; convert coordinates to index for array
+   cmp cx, 16   ; less than 16, out of bounds
+   jl mouse_end
+   cmp cx, 16 + 16 * 16  ; horizontally, one cell is 16px across
+   jg mouse_end
+   cmp dx, 8
+   jl mouse_end
+   cmp dx, 8 + 16 * 8
+   jg mouse_end
+   
+   sub cx, 16
+   shr cx, 4
+   sub dx, 8
+   shr dx, 3
+   shl dx, 4
+   mov di, dx
+   add di, cx
+
+   test ax, 04h   ; left button released
+   jz test_flag
+   xor field[di], 80h
+   jmp repaint
+test_flag:
+   test ax, 10h
+   jz repaint
+   xor field[di], 40h
+repaint: 
+   call draw_field
+
+mouse_end:
+   pop di
+   pop es
+   pop ds
    ret
 mouse endp
+
+
 
 start:
    call init_screen

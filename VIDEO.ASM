@@ -35,6 +35,9 @@ draw_inner_loop:
     dec ah
     jnz draw_loop
 
+    ; enable cursor
+    mov ax, 1
+    int 33h
     pop es
     ret
 draw_field endp
@@ -84,14 +87,16 @@ border_loop:
     
     mov dh, field[di]
     rcl dh, 1
-    jnc draw_cell_end
-draw_content:
+    jc draw_revealed
+draw_flag:
     rcl dh, 1   ; flagged
-    jnc draw_revealed
+    jnc draw_cell_end
     ; draw flag
-    jmp draw_cell_end
+    mov dh, 0Dh
+    mov dl, 46h
+    jmp draw_call
 draw_revealed:
-    rcl dh, 1   ; mine
+    rcl dh, 2   ; mine
     jc draw_mine
     shr dh, 3
     jz draw_cell_end
@@ -108,9 +113,6 @@ draw_call:
     mov si, ax
     call draw_char
 draw_cell_end:
-    ; enable cursor
-    mov ax, 1
-    int 33h
     pop ax
     ret
 draw_cell endp
