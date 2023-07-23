@@ -35,6 +35,22 @@ draw_inner_loop:
     dec ah
     jnz draw_loop
 
+    ; game over?
+    cmp game_over, 1
+    jne draw_end 
+    mov ax, 320 * 17 * 8 + 16
+    mov dh, 04h
+    xor bx, bx
+game_over_draw:
+    mov dl, byte ptr game_over_text[bx]
+    mov si, ax
+    call draw_char
+    add ax, 8 
+    inc bx
+    cmp bx, 9
+    jne game_over_draw
+    
+draw_end:
     ; enable cursor
     mov ax, 1
     int 33h
@@ -123,6 +139,7 @@ draw_char proc
     push ds
     push dx
     push ax
+    push bx
     mov ax, romseg
     mov ds, ax
     
@@ -148,6 +165,7 @@ char_loop_end:
     cmp ch, 8
     jne char_loop
 
+    pop bx
     pop ax
     pop dx
     pop ds

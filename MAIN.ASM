@@ -17,6 +17,8 @@ mines = 10h
    field db 10h*10h dup (0h)
    colors db 00h, 09h, 0Ah, 0Ch, 01h, 04h, 03h, 05h, 08h
    offsets db -11h, -10h, -0Fh, -01h, 01h, 0Fh, 10h, 11h
+   game_over db 0
+   game_over_text db 47h, 61h, 6Dh, 65h, 20h, 4Fh, 76h, 65h, 72h
    seed dw 0
 
 .code
@@ -29,6 +31,10 @@ mouse proc far
 
    mov bx, @DATA 
    mov ds, bx
+   
+   ; if game over, do nothing
+   cmp game_over, 1
+   je mouse_end
 
    ; convert coordinates to index for array
    cmp cx, 16   ; less than 16, out of bounds
@@ -50,7 +56,16 @@ mouse proc far
 
    test ax, 04h   ; left button released
    jz test_flag
+   ; only reveal if there is no flag
+   test field[di], 40h
+   jnz mouse_end 
    xor field[di], 80h
+   test field[di], 20h
+   jz check_reveal
+   mov game_over, 1
+   jmp repaint
+check_reveal:
+
    jmp repaint
 test_flag:
    test ax, 10h
@@ -66,7 +81,9 @@ mouse_end:
    ret
 mouse endp
 
+reveal proc
 
+reveal endp
 
 start:
    call init_screen
