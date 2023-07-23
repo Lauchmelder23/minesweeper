@@ -40,7 +40,7 @@ mine_loop:  ; generated mine positions
    mov di, ax
    test byte ptr field[di], 20h
    jnz mine_loop
-   mov byte ptr field[di], 0A0h
+   mov byte ptr field[di], 020h
    dec bl
    jnz mine_loop
 
@@ -79,7 +79,7 @@ hints_loop: ; calculates necessary info for remaining board (i.e. numbers)
 
    call num_surrounding_mines
    or field[di], al
-   or field[di], 80h    ; DEBUG: reveal all fields
+   ; or field[di], 80h    ; DEBUG: reveal all fields
 
 hints_loop_end:
    cmp di, 0

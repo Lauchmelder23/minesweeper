@@ -78,6 +78,9 @@ border_loop:
     dec ch
     jnz border_loop
     
+    mov dh, field[di]
+    rcl dh, 1
+    jnc draw_cell_end
 draw_content:
     rcl dh, 1   ; flagged
     jnc draw_revealed
